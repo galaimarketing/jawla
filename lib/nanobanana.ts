@@ -6,9 +6,29 @@ interface NanobananaCreatePanoramaResult {
   panoramaUrl: string;
 }
 
+interface GenerateResponse {
+  success: boolean;
+  generationId?: string;
+  taskId?: string;
+  status?: string;
+  error?: string;
+}
+
+interface CheckStatusResponse {
+  success: boolean;
+  status: "pending" | "generating" | "completed" | "failed";
+  imageUrl?: string;
+  generationId?: string;
+  progress?: number;
+  error?: string;
+}
+
 interface NanobananaClient {
   createPanorama(input: CreatePanoramaInput): Promise<NanobananaCreatePanoramaResult>;
 }
+
+const POLL_INTERVAL_MS = 4_000;
+const MAX_POLLS = 30;
 
 class NanobananaHttpClient implements NanobananaClient {
   private readonly baseUrl: string;
@@ -21,40 +41,75 @@ class NanobananaHttpClient implements NanobananaClient {
 
   async createPanorama(input: CreatePanoramaInput): Promise<NanobananaCreatePanoramaResult> {
     if (!this.baseUrl || !this.apiKey) {
-      throw new Error("Nanobanana API is not configured.");
+      throw new Error("Nanobanana API is not configured. Set NANOBANANA_API_URL and GEMINI_API_KEY.");
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45_000);
+    const limitedImages = input.images.slice(0, 8);
 
-    try {
-      // TODO: Replace this payload and endpoint with the exact Nano Banana Pro API shape.
-      const response = await fetch(`${this.baseUrl}/panorama/stitch`, {
+    // Step 1: submit generation task using edit mode
+    const generateRes = await fetch(`${this.baseUrl}/api/nano-banana-pro/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        prompt:
+          "Create a seamless equirectangular 360-degree panorama image from these room photos. " +
+          "The output should be a single wide panoramic photograph suitable for a virtual tour viewer. " +
+          "Maintain realistic lighting and perspective consistency.",
+        mode: "edit",
+        aspectRatio: "16:9",
+        imageQuality: "2K",
+        inputImageUrls: limitedImages,
+      }),
+    });
+
+    if (!generateRes.ok) {
+      const text = await generateRes.text();
+      throw new Error(`Nanobanana generate failed (${generateRes.status}): ${text}`);
+    }
+
+    const generateData = (await generateRes.json()) as GenerateResponse;
+
+    if (!generateData.success || !generateData.generationId) {
+      throw new Error(`Nanobanana generate rejected: ${generateData.error || "unknown error"}`);
+    }
+
+    const { generationId } = generateData;
+    console.log(`[nanobanana] Task created: ${generationId}`);
+
+    // Step 2: poll for completion
+    for (let i = 0; i < MAX_POLLS; i++) {
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+
+      const statusRes = await fetch(`${this.baseUrl}/api/nano-banana-pro/check-status`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${this.apiKey}`,
         },
-        body: JSON.stringify({ images: input.images }),
-        signal: controller.signal,
+        body: JSON.stringify({ generationId }),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Nanobanana request failed (${response.status}): ${text}`);
+      if (!statusRes.ok) {
+        console.warn(`[nanobanana] Status poll ${i + 1} HTTP ${statusRes.status}`);
+        continue;
       }
 
-      const data = (await response.json()) as { panoramaUrl?: string; output_url?: string };
-      const panoramaUrl = data.panoramaUrl || data.output_url;
+      const statusData = (await statusRes.json()) as CheckStatusResponse;
+      console.log(`[nanobanana] Poll ${i + 1}: status=${statusData.status} progress=${statusData.progress ?? "?"}%`);
 
-      if (!panoramaUrl) {
-        throw new Error("Nanobanana response did not include panorama URL.");
+      if (statusData.status === "completed" && statusData.imageUrl) {
+        return { panoramaUrl: statusData.imageUrl };
       }
 
-      return { panoramaUrl };
-    } finally {
-      clearTimeout(timeout);
+      if (statusData.status === "failed") {
+        throw new Error(`Nanobanana generation failed: ${statusData.error || "unknown"}`);
+      }
     }
+
+    throw new Error(`Nanobanana generation timed out after ${MAX_POLLS} polls.`);
   }
 }
 
@@ -84,8 +139,7 @@ export async function stitchRoomToPanorama(photoUrls: string[]): Promise<{ panor
     const result = await retry(() => client.createPanorama({ images: photoUrls }));
     return { panoramaUrl: result.panoramaUrl, fallback: false };
   } catch (error) {
-    console.error("Nanobanana stitching failed, using fallback", error);
-    // Fallback mode for MVP: keep the first image as pseudo-panorama.
+    console.error("[nanobanana] Stitching failed, using fallback", error);
     return { panoramaUrl: photoUrls[0], fallback: true };
   }
 }
