@@ -44,7 +44,7 @@ export default async function TourManagePage({ params }: PageProps) {
 
   return (
     <section className="space-y-4">
-      <div>
+      <div className="rounded-2xl border border-white/10 bg-[#0b1228]/55 p-4 backdrop-blur-sm">
         <h1 className="text-2xl font-semibold">{(tour as Tour).title}</h1>
         <p className="text-sm text-slate-400">Manage rooms, photos, hotspots, and publishing.</p>
       </div>

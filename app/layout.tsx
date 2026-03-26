@@ -1,9 +1,24 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Kufi_Arabic } from "next/font/google";
+import { IBM_Plex_Sans_Arabic, Markazi_Text, Space_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
-const notoArabic = Noto_Kufi_Arabic({ subsets: ["arabic"], weight: ["400", "500", "700"] });
+const ibmPlexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-ibm-plex-arabic",
+});
+
+const markaziText = Markazi_Text({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-markazi",
+});
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+});
 
 export const metadata: Metadata = {
   title: "jawla",
@@ -13,8 +28,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} ${notoArabic.className}`}>{children}</body>
+    <html lang="ar">
+      <body className={`${ibmPlexArabic.variable} ${markaziText.variable} ${spaceMono.variable} relative overflow-x-hidden`}>
+        <div className="relative z-10">{children}</div>
+      </body>
     </html>
   );
 }

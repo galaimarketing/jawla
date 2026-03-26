@@ -79,7 +79,7 @@ export default async function PublicTourPage({ params }: PageProps) {
   const description = `${data.tour.title} interactive 360 virtual tour`;
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8">
+    <main className="min-h-screen px-4 py-8">
       <div className="mx-auto max-w-6xl">
         <PublicTourViewer slug={slug} title={data.tour.title} description={description} rooms={data.rooms} />
       </div>

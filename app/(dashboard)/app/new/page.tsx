@@ -36,7 +36,7 @@ export default function NewTourPage() {
   };
 
   return (
-    <section className="mx-auto max-w-lg rounded-xl border border-white/10 bg-slate-900/60 p-6">
+    <section className="mx-auto max-w-lg rounded-2xl border border-white/10 bg-[#0b1228]/70 p-6 backdrop-blur-sm">
       <h1 className="text-xl font-semibold">Create new tour</h1>
       <form className="mt-4 space-y-4" onSubmit={onSubmit}>
         <div>
@@ -45,7 +45,7 @@ export default function NewTourPage() {
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2"
+            className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2"
             placeholder="Sea View Apartment"
           />
         </div>
@@ -55,14 +55,14 @@ export default function NewTourPage() {
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2"
+            className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2"
           >
             <option value="en">English</option>
             <option value="ar">Arabic</option>
           </select>
         </div>
 
-        <button disabled={loading} className="w-full rounded-lg bg-white py-2 font-medium text-black disabled:opacity-60">
+        <button disabled={loading} className="w-full rounded-full bg-white py-2 font-medium text-black disabled:opacity-60">
           {loading ? "Creating..." : "Create tour"}
         </button>
       </form>

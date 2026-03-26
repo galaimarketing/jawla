@@ -88,14 +88,14 @@ export default function Viewer360({
   }, [panoramaUrl, onHotspotClick, safeHotspots]);
 
   return (
-    <div className={cn("relative overflow-hidden rounded-xl border border-white/10 bg-black", className)}>
+    <div className={cn("relative overflow-hidden rounded-2xl border border-white/10 bg-[#020817]/80 backdrop-blur-sm", className)}>
       <div ref={containerRef} className="h-[55vh] min-h-[320px] w-full" />
       {interactive ? (
-        <div className="absolute bottom-3 left-3 rounded-lg bg-black/60 px-3 py-2 text-xs text-white">
+        <div className="absolute bottom-3 left-3 rounded-xl border border-white/20 bg-[#0b1228]/80 px-3 py-2 text-xs text-white backdrop-blur-sm">
           <p>Center point yaw: {currentPoint.yaw.toFixed(3)}</p>
           <p>Center point pitch: {currentPoint.pitch.toFixed(3)}</p>
           <button
-            className="mt-2 rounded bg-white px-2 py-1 text-black"
+            className="mt-2 rounded-full bg-white px-3 py-1 text-black"
             onClick={() => onCapturePoint?.(currentPoint)}
           >
             Use center point for hotspot

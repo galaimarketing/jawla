@@ -3,30 +3,68 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Loader2 } from "lucide-react";
 
 export default function AuthPage() {
+  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleSendLink = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const supabase = createClient();
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+
+      if (error) {
+        setMessage(error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
     try {
       const supabase = createClient();
-      const redirectTo = `${window.location.origin}/auth/callback`;
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: redirectTo },
-      });
+      const { error } =
+        mode === "sign-up"
+          ? await supabase.auth.signUp({
+              email,
+              password,
+              options: {
+                data: {
+                  full_name: fullName || null,
+                },
+              },
+            })
+          : await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
 
       if (error) {
         setMessage(error.message);
       } else {
-        setMessage("Magic link sent. Check your email.");
+        setMessage(
+          mode === "sign-up"
+            ? "Account created. Check your inbox if email confirmation is enabled."
+            : "Signed in successfully. Redirecting...",
+        );
+        router.push("/app");
         router.refresh();
       }
     } finally {
@@ -35,26 +73,79 @@ export default function AuthPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6">
+    <main className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0b1228]/70 p-6 shadow-xl backdrop-blur-md">
         <h1 className="text-2xl font-semibold">Sign in to jawla</h1>
-        <p className="mt-2 text-sm text-slate-300">Use a passwordless magic link (Supabase OTP).</p>
+        <p className="mt-2 text-sm text-slate-300">
+          Continue with Google or use your email and password.
+        </p>
 
-        <form className="mt-6 space-y-4" onSubmit={handleSendLink}>
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-[#020817]/90 px-3 py-2 text-sm font-medium hover:bg-white/10 disabled:opacity-60"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="text-base font-bold">G</span>}
+          Sign in with Google
+        </button>
+
+        <div className="my-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="text-xs uppercase tracking-wide text-slate-400">or</span>
+          <div className="h-px flex-1 bg-white/10" />
+        </div>
+
+        <div className="mb-4 grid grid-cols-2 rounded-xl border border-white/10 bg-white/[0.02] p-1">
+          <button
+            type="button"
+            onClick={() => setMode("sign-in")}
+            className={`rounded-lg px-3 py-2 text-sm ${mode === "sign-in" ? "bg-white text-black" : "text-slate-300"}`}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("sign-up")}
+            className={`rounded-lg px-3 py-2 text-sm ${mode === "sign-up" ? "bg-white text-black" : "text-slate-300"}`}
+          >
+            Sign up
+          </button>
+        </div>
+
+        <form className="space-y-4" onSubmit={handleEmailPassword}>
+          {mode === "sign-up" ? (
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Full name (optional)"
+              className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
+            />
+          ) : null}
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
+          />
+          <input
+            type="password"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
           />
           <button
             disabled={loading}
-            className="w-full rounded-lg bg-white px-3 py-2 text-sm font-medium text-black disabled:opacity-60"
+            className="w-full rounded-full bg-white px-3 py-2 text-sm font-medium text-black disabled:opacity-60"
             type="submit"
           >
-            {loading ? "Sending..." : "Send magic link"}
+            {loading ? "Please wait..." : mode === "sign-up" ? "Create account" : "Sign in"}
           </button>
         </form>
 

@@ -38,7 +38,7 @@ export default function PublicTourViewer({ slug, title, description, rooms }: Pu
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
+      <div className="rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm">
         <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="mt-1 text-sm text-slate-300">{description}</p>
 
@@ -47,7 +47,7 @@ export default function PublicTourViewer({ slug, title, description, rooms }: Pu
             <button
               key={room.id}
               onClick={() => setActiveRoomId(room.id)}
-              className={`rounded-full px-3 py-1.5 text-sm ${room.id === activeRoom.id ? "bg-white text-black" : "border border-white/20"}`}
+              className={`rounded-full px-3 py-1.5 text-sm ${room.id === activeRoom.id ? "bg-white text-black" : "border border-white/20 hover:bg-white/10"}`}
             >
               {room.name}
             </button>
@@ -57,7 +57,7 @@ export default function PublicTourViewer({ slug, title, description, rooms }: Pu
             href={`https://wa.me/?text=${waText}`}
             target="_blank"
             rel="noreferrer"
-            className="ml-auto rounded-full bg-emerald-400 px-3 py-1.5 text-sm font-medium text-black"
+            className="ml-auto rounded-full bg-white px-4 py-1.5 text-sm font-medium text-black"
           >
             Share on WhatsApp
           </a>
@@ -74,7 +74,7 @@ export default function PublicTourViewer({ slug, title, description, rooms }: Pu
           }}
         />
       ) : (
-        <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
+        <div className="rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm">
           <p className="mb-3 text-sm text-slate-300">Panorama unavailable. Showing room photos fallback carousel.</p>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
             {activeRoom.room_photos.map((photo) => (

@@ -154,11 +154,11 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 rounded-xl border border-white/10 bg-slate-900/70 p-4 md:grid-cols-3">
+      <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm md:grid-cols-3">
         <div>
           <label className="mb-2 block text-sm text-slate-300">Rooms</label>
           <select
-            className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
             value={selectedRoom?.id ?? ""}
             onChange={(e) => setSelectedRoomId(e.target.value)}
           >
@@ -177,9 +177,9 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
               value={newRoomName}
               onChange={(e) => setNewRoomName(e.target.value)}
               placeholder="Living room"
-              className="w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
             />
-            <button onClick={addRoom} className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black">
+            <button onClick={addRoom} className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black">
               Add
             </button>
           </div>
@@ -199,7 +199,7 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
               }}
             />
           ) : (
-            <div className="rounded-xl border border-dashed border-white/20 p-6">
+            <div className="rounded-2xl border border-dashed border-white/20 bg-[#0b1228]/45 p-6">
               <p className="text-sm text-slate-300">No panorama yet. Upload photos and click Generate panorama.</p>
               <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3">
                 {selectedRoom?.room_photos.map((photo) => (
@@ -214,7 +214,7 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
             </div>
           )}
 
-          <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
+          <div className="rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm">
             <label className="mb-2 block text-sm text-slate-300">Upload room photos</label>
             <input
               type="file"
@@ -227,7 +227,7 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
             <button
               onClick={generatePanorama}
               disabled={stitching || !selectedRoom}
-              className="mt-3 rounded-lg bg-cyan-400 px-4 py-2 text-sm font-medium text-black disabled:opacity-70"
+              className="mt-3 rounded-full bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-70"
             >
               {stitching ? "Generating..." : "Generate panorama"}
             </button>
@@ -235,7 +235,7 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
+          <div className="rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm">
             <h3 className="mb-2 text-sm font-medium">Create hotspot</h3>
             <p className="text-xs text-slate-300">Use current viewer center point or edit values manually.</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -244,7 +244,7 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
                 type="number"
                 step="0.01"
                 onChange={(e) => setPoint((prev) => ({ ...prev, yaw: Number(e.target.value) }))}
-                className="rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+                className="rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
                 placeholder="Yaw"
               />
               <input
@@ -252,13 +252,13 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
                 type="number"
                 step="0.01"
                 onChange={(e) => setPoint((prev) => ({ ...prev, pitch: Number(e.target.value) }))}
-                className="rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+                className="rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
                 placeholder="Pitch"
               />
             </div>
 
             <select
-              className="mt-2 w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
               value={targetRoomId}
               onChange={(e) => setTargetRoomId(e.target.value)}
             >
@@ -272,19 +272,19 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
             </select>
 
             <input
-              className="mt-2 w-full rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
               placeholder="Label (optional)"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
             />
 
-            <button onClick={createHotspot} className="mt-2 w-full rounded-lg bg-white px-4 py-2 text-sm font-medium text-black">
+            <button onClick={createHotspot} className="mt-2 w-full rounded-full bg-white px-4 py-2 text-sm font-medium text-black">
               Save hotspot
             </button>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
-            <button onClick={publishTour} className="w-full rounded-lg bg-emerald-400 px-4 py-2 text-sm font-medium text-black">
+          <div className="rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm">
+            <button onClick={publishTour} className="w-full rounded-full bg-white px-4 py-2 text-sm font-medium text-black">
               Publish tour
             </button>
             {tour.status === "published" ? (

@@ -6,7 +6,7 @@ Street View style 360 virtual tour MVP built with Next.js App Router, TypeScript
 
 - Next.js App Router
 - TypeScript + Tailwind CSS
-- Supabase Auth (magic link), Postgres, Storage
+- Supabase Auth (Google OAuth + email/password), Postgres, Storage
 - Marzipano for 360 panorama viewer and hotspots
 - Vercel AI SDK with Gemini (`GEMINI_API_KEY`) for lightweight generated descriptions
 - Nano Banana adapter with fallback mode when stitching API contract is missing/unavailable
@@ -17,7 +17,7 @@ Street View style 360 virtual tour MVP built with Next.js App Router, TypeScript
   - `/` landing
   - `/t/[slug]` public tour viewer
 - Authenticated:
-  - `/auth` magic link login
+  - `/auth` Google + email/password login
   - `/app` list tours
   - `/app/new` create tour
   - `/app/tours/[tourId]` manage rooms, uploads, stitching, hotspots, publish
@@ -45,9 +45,10 @@ Copy `.env.example` to `.env.local`:
 ### Supabase setup
 
 1. Create Supabase project
-2. Enable Email OTP / Magic Link in Auth settings
-3. Run `supabase/schema.sql`
-4. Confirm buckets:
+2. Enable Email/Password and Google provider in Auth settings
+3. In Google provider settings, set redirect URL to `https://<your-domain>/auth/callback` (and local `http://localhost:3000/auth/callback`)
+4. Run `supabase/schema.sql`
+5. Confirm buckets:
    - `tour-uploads` (private)
    - `tour-public` (public)
 
