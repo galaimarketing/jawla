@@ -58,3 +58,50 @@ body::after {
     transform: translate3d(22px, 22px, 0);
   }
 }
+
+/* Street View–style link hotspots (Marzipano) */
+.jawla-link-hotspot {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  line-height: 1.2;
+}
+
+.jawla-link-hotspot-inner {
+  display: inline-flex;
+  max-width: min(200px, 40vw);
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 0.35rem 0.65rem 0.35rem 0.4rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.jawla-link-hotspot:hover .jawla-link-hotspot-inner {
+  background: rgba(30, 64, 175, 0.92);
+  transform: scale(1.03);
+}
+
+.jawla-link-hotspot-chevron {
+  flex-shrink: 0;
+  display: block;
+}
+
+.jawla-link-hotspot-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #f8fafc;
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[dir="rtl"] .jawla-link-hotspot-chevron {
+  transform: scaleX(-1);
+}

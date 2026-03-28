@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import LocaleToggle from "@/components/locale-toggle";
+import { authCopy } from "@/lib/locale-copy";
+import { useLanguage } from "@/contexts/language-context";
 import { Loader2 } from "lucide-react";
 
 export default function AuthPage() {
+  const { locale } = useLanguage();
+  const a = authCopy(locale);
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,10 +44,10 @@ export default function AuthPage() {
       if (data?.url) {
         window.location.assign(data.url);
       } else {
-        setMessage("Google sign-in URL was not returned. Please try again.");
+        setMessage(a.googleUrlMissing);
       }
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Google sign-in failed.");
+      setMessage(err instanceof Error ? err.message : a.googleFailed);
     } finally {
       setLoading(false);
     }
@@ -78,16 +83,14 @@ export default function AuthPage() {
       } else {
         if (mode === "sign-up") {
           if (result.data.session) {
-            setMessage("Account created successfully. Redirecting...");
+            setMessage(a.accountCreated);
             router.push("/app");
             router.refresh();
           } else {
-            setMessage(
-              "Account created, but Supabase email confirmation is enabled. Disable it in Supabase Auth settings for instant signup.",
-            );
+            setMessage(a.confirmEmailHint);
           }
         } else {
-          setMessage("Signed in successfully. Redirecting...");
+          setMessage(a.signedInRedirect);
           router.push("/app");
           router.refresh();
         }
@@ -98,12 +101,13 @@ export default function AuthPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
+    <main className="flex min-h-screen items-center justify-center px-4" dir={locale === "ar" ? "rtl" : "ltr"}>
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0b1228]/70 p-6 shadow-xl backdrop-blur-md">
-        <h1 className="text-2xl font-semibold">Sign in to jawla</h1>
-        <p className="mt-2 text-sm text-slate-300">
-          Continue with Google or use your email and password.
-        </p>
+        <div className="mb-4 flex justify-end">
+          <LocaleToggle />
+        </div>
+        <h1 className="text-2xl font-semibold">{a.title}</h1>
+        <p className="mt-2 text-sm text-slate-300">{a.subtitle}</p>
 
         <button
           type="button"
@@ -112,12 +116,12 @@ export default function AuthPage() {
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-[#020817]/90 px-3 py-2 text-sm font-medium hover:bg-white/10 disabled:opacity-60"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="text-base font-bold">G</span>}
-          Sign in with Google
+          {a.google}
         </button>
 
         <div className="my-4 flex items-center gap-3">
           <div className="h-px flex-1 bg-white/10" />
-          <span className="text-xs uppercase tracking-wide text-slate-400">or</span>
+          <span className="text-xs uppercase tracking-wide text-slate-400">{a.or}</span>
           <div className="h-px flex-1 bg-white/10" />
         </div>
 
@@ -127,14 +131,14 @@ export default function AuthPage() {
             onClick={() => setMode("sign-in")}
             className={`rounded-lg px-3 py-2 text-sm ${mode === "sign-in" ? "bg-white text-black" : "text-slate-300"}`}
           >
-            Sign in
+            {a.signIn}
           </button>
           <button
             type="button"
             onClick={() => setMode("sign-up")}
             className={`rounded-lg px-3 py-2 text-sm ${mode === "sign-up" ? "bg-white text-black" : "text-slate-300"}`}
           >
-            Sign up
+            {a.signUp}
           </button>
         </div>
 
@@ -144,7 +148,7 @@ export default function AuthPage() {
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Full name (optional)"
+              placeholder={a.fullName}
               className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
             />
           ) : null}
@@ -153,7 +157,7 @@ export default function AuthPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={a.emailPlaceholder}
             className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
           />
           <input
@@ -162,7 +166,7 @@ export default function AuthPage() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
+            placeholder={a.passwordPlaceholder}
             className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
           />
           <button
@@ -170,7 +174,7 @@ export default function AuthPage() {
             className="w-full rounded-full bg-white px-3 py-2 text-sm font-medium text-black disabled:opacity-60"
             type="submit"
           >
-            {loading ? "Please wait..." : mode === "sign-up" ? "Create account" : "Sign in"}
+            {loading ? a.wait : mode === "sign-up" ? a.createAccount : a.signInBtn}
           </button>
         </form>
 

@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, Compass, Globe, Share2, Smartphone } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function HomePage() {
-  const [lang, setLang] = useState<"ar" | "en">("ar");
+  const { setLocale, isArabic } = useLanguage();
   const [activeUseCase, setActiveUseCase] = useState<"real-estate" | "hotel" | "retail">("real-estate");
-  const isArabic = lang === "ar";
   const useCaseCopy = {
     "real-estate": isArabic
       ? "للوسطاء العقاريين: اعرض الشقة كاملة بجولة واحدة بدل عشرات الصور."
@@ -27,7 +27,7 @@ export default function HomePage() {
           <h1 className="text-2xl font-semibold">jawla</h1>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
-              onClick={() => setLang(isArabic ? "en" : "ar")}
+              onClick={() => setLocale(isArabic ? "en" : "ar")}
               className="font-space inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-2 text-sm uppercase hover:bg-white/10"
               type="button"
             >

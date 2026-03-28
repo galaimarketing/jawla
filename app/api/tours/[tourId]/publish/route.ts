@@ -22,8 +22,6 @@ export async function POST(_request: Request, { params }: Params) {
     return NextResponse.json({ message: tourError?.message || "Tour not found" }, { status: 404 });
   }
 
-  const description = await generateTourDescription(tour.title, tour.language);
-
   const { error } = await supabase
     .from("tours")
     .update({
@@ -36,6 +34,8 @@ export async function POST(_request: Request, { params }: Params) {
   if (error) {
     return NextResponse.json({ message: error.message }, { status: 400 });
   }
+
+  const description = await generateTourDescription(tour.title, tour.language ?? "en");
 
   return NextResponse.json({ ok: true, description });
 }

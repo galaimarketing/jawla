@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import ManageTourClient from "@/components/dashboard/manage-tour-client";
+import { TourManageIntro } from "@/components/tour-manage-intro";
 import { createClient } from "@/lib/supabase/server";
 import type { Hotspot, Room, RoomPhoto, Tour } from "@/lib/types";
 
@@ -20,8 +21,7 @@ export default async function TourManagePage({ params }: PageProps) {
   if (roomRows.length === 0) {
     return (
       <section className="space-y-3">
-        <h1 className="text-2xl font-semibold">{(tour as Tour).title}</h1>
-        <p className="text-sm text-slate-300">Add your first room to start uploading photos.</p>
+        <TourManageIntro title={(tour as Tour).title} variant="empty" />
         <ManageTourClient tour={tour as Tour} rooms={[]} />
       </section>
     );
@@ -45,8 +45,7 @@ export default async function TourManagePage({ params }: PageProps) {
   return (
     <section className="space-y-4">
       <div className="rounded-2xl border border-white/10 bg-[#0b1228]/55 p-4 backdrop-blur-sm">
-        <h1 className="text-2xl font-semibold">{(tour as Tour).title}</h1>
-        <p className="text-sm text-slate-400">Manage rooms, photos, hotspots, and publishing.</p>
+        <TourManageIntro title={(tour as Tour).title} variant="full" />
       </div>
       <ManageTourClient tour={tour as Tour} rooms={roomsWithData} />
     </section>
