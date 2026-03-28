@@ -40,12 +40,14 @@ export default function AuthPage() {
 
     try {
       const supabase = createClient();
-      const { error } =
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      const result =
         mode === "sign-up"
           ? await supabase.auth.signUp({
               email,
               password,
               options: {
+                emailRedirectTo: redirectTo,
                 data: {
                   full_name: fullName || null,
                 },
@@ -56,16 +58,24 @@ export default function AuthPage() {
               password,
             });
 
-      if (error) {
-        setMessage(error.message);
+      if (result.error) {
+        setMessage(result.error.message);
       } else {
-        setMessage(
-          mode === "sign-up"
-            ? "Account created. Check your inbox if email confirmation is enabled."
-            : "Signed in successfully. Redirecting...",
-        );
-        router.push("/app");
-        router.refresh();
+        if (mode === "sign-up") {
+          if (result.data.session) {
+            setMessage("Account created successfully. Redirecting...");
+            router.push("/app");
+            router.refresh();
+          } else {
+            setMessage(
+              "Account created, but Supabase email confirmation is enabled. Disable it in Supabase Auth settings for instant signup.",
+            );
+          }
+        } else {
+          setMessage("Signed in successfully. Redirecting...");
+          router.push("/app");
+          router.refresh();
+        }
       }
     } finally {
       setLoading(false);
