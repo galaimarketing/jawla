@@ -130,22 +130,29 @@ export function tourManageHeader(locale: Locale) {
   return t[locale];
 }
 
-export function captureSteps(locale: Locale): string[] {
-  const ar = [
+/** Wall sequence + optional door step (uses hotspot “connect to” room) or generic optional shot. */
+export function captureStepsForTour(locale: Locale, connectRoomName: string | null): string[] {
+  const arWalls = [
     "قف في المنتصف ووجّه الكاميرا نحو الجدار الأول مع إظهار الأرض والسقف.",
     "ادر ٩٠° يميناً نحو الجدار الثاني مع تداخل حوالي ٣٠٪ مع الصورة السابقة.",
     "استمر إلى الجدار الثالث بنفس الارتفاع والتداخل.",
     "أكمل الجدار الرابع لإغلاق حلقة ٣٦٠°.",
-    "اختياري: صوّر زاوية إضافية لتحسين استمرارية الدمج.",
   ];
-  const en = [
+  const enWalls = [
     "Stand in the center, face wall 1, and keep floor + ceiling visible.",
     "Rotate 90° right to wall 2 with ~30% overlap from previous photo.",
     "Rotate to wall 3 with the same height and overlap.",
     "Rotate to wall 4 and complete the full 360 loop.",
-    "Optional: capture one corner detail to improve stitching continuity.",
   ];
-  return locale === "ar" ? ar : en;
+  const walls = locale === "ar" ? arWalls : enWalls;
+  const fifth = connectRoomName
+    ? locale === "ar"
+      ? `الباب أو الممر نحو «${connectRoomName}»: قف في العتبة واجعل الفتحة في منتصف الإطار ثم التقط (يُستخدم كدليل لربط الغرف).`
+      : `Doorway toward “${connectRoomName}”: stand on the threshold, center the opening in frame, then capture (guides room links).`
+    : locale === "ar"
+      ? "اختياري: زاوية إضافية لتحسين استمرارية الدمج."
+      : "Optional: one corner shot for stitching continuity.";
+  return [...walls, fifth];
 }
 
 export function manageTour(locale: Locale) {
@@ -158,7 +165,14 @@ export function manageTour(locale: Locale) {
       noPanorama: "لا يوجد بانوراما بعد. ارفع الصور ثم اضغط «إنشاء بانوراما».",
       guidedTitle: "التقاط موجّه للغرفة",
       guidedIntro: (min: number) =>
-        `التقط الصور بالتتابع لدمج أفضل. الحد الأدنى: ${min}.`,
+        `الحد الأدنى ${min} صور للدمج بالذكاء الاصطناعي؛ يُفضّل ٤ صور للجدران لأفضل هندسة. اختر غرفة الربط أسفل ليتحدث الدليل عن الباب.`,
+      guideConnectToward: "غرفة الربط (لخطوة الباب الموجّهة + نقاط المشي)",
+      doorLive: (name: string) =>
+        `الخطوة الحالية: صوّر مدخل أو باب نحو «${name}» قبل الاختياري التالي.`,
+      autoLinkRooms: "ربط الغرف تلقائياً (حسب الترتيب)",
+      autoLinkWorking: "جاري إنشاء الروابط...",
+      autoLinkDone: (n: number) => (n === 0 ? "لا توجد روابط جديدة (ربما موجودة مسبقاً)." : `تم إنشاء ${n} رابط انتقال.`),
+      autoLinkFailed: "تعذّر الربط التلقائي",
       step: "الخطوة",
       nextPhoto: (cur: number, min: number) => `الصورة التالية (${cur}/${min})`,
       optionalExtra: "صورة إضافية اختيارية",
@@ -169,6 +183,7 @@ export function manageTour(locale: Locale) {
       hotspotWalkHint:
         "ضع النقاط عند الممرات أو الأبواب — الزوار ينتقلون بين الغرف في نفس النافذة (مثل Street View).",
       hotspotHint: "استخدم مركز العارض الحالي أو عدّل القيم يدوياً.",
+      hotspotTargetHint: "غرفة الوجهة تُختار أعلى في «التقاط موجّه».",
       yaw: "انحراف",
       pitch: "ميل",
       labelPlaceholder: "تسمية (اختياري)",
@@ -199,7 +214,15 @@ export function manageTour(locale: Locale) {
       noPanorama: "No panorama yet. Upload photos and click Generate panorama.",
       guidedTitle: "Guided room capture",
       guidedIntro: (min: number) =>
-        `Capture photos in sequence for better stitching. Minimum required: ${min}.`,
+        `Minimum ${min} photos for AI stitch; 4 wall shots recommended for best geometry. Pick a “connect to” room below so the live step calls out the doorway.`,
+      guideConnectToward: "Connect toward (guided door step + walk links)",
+      doorLive: (name: string) =>
+        `Current step: capture the doorway or opening toward “${name}” before the optional shot.`,
+      autoLinkRooms: "Auto-link rooms (in order)",
+      autoLinkWorking: "Creating links...",
+      autoLinkDone: (n: number) =>
+        n === 0 ? "No new links (they may already exist)." : `Created ${n} walk link(s).`,
+      autoLinkFailed: "Auto-link failed",
       step: "Step",
       nextPhoto: (cur: number, min: number) => `Next photo (${cur}/${min})`,
       optionalExtra: "Add optional extra photo",
@@ -210,6 +233,7 @@ export function manageTour(locale: Locale) {
       hotspotWalkHint:
         "Place hotspots at doorways or hallways — visitors walk between rooms in one viewer (Street View–style).",
       hotspotHint: "Use current viewer center point or edit values manually.",
+      hotspotTargetHint: "Target room is selected above in Guided capture.",
       yaw: "Yaw",
       pitch: "Pitch",
       labelPlaceholder: "Label (optional)",
@@ -241,20 +265,34 @@ export function publicTour(locale: Locale) {
     ar: {
       noRooms: "لا توجد غرف في هذه الجولة.",
       shareWhatsApp: "مشاركة عبر واتساب",
-      waText: (url: string) => `جولة افتراضية 360: ${url}`,
+      waText: (opts: { url: string; title: string; roomNames: string[] }) => {
+        const rooms =
+          opts.roomNames.length > 0
+            ? `الغرف: ${opts.roomNames.join("، ")}.`
+            : "";
+        return `جولة 360° افتراضية — «${opts.title}». ${rooms} ادخل وتمشّى بين الغرف من الرابط: ${opts.url}`;
+      },
       noPanorama: "البانوراما غير متاحة. عرض صور الغرفة.",
       walkHint:
-        "جميع الغرف المدمجة تظهر في نافذة واحدة — تنقّل كخرائط جوجل: اسحب للنظر، واضغط الأسهم للانتقال بين الغرف.",
+        "جميع الغرف المدمجة تظهر في نافذة واحدة — اسحب للنظر، واضغط الأسهم في المشهد أو الأزرار أسفل المشهد للانتقال.",
       noStitchYet: "بانتظار الدمج",
+      viewerRoomNav: "انتقل إلى غرفة",
+      youAreIn: (name: string) => `أنت الآن في: ${name}`,
     },
     en: {
       noRooms: "No rooms available in this tour.",
       shareWhatsApp: "Share on WhatsApp",
-      waText: (url: string) => `Take this virtual tour: ${url}`,
+      waText: (opts: { url: string; title: string; roomNames: string[] }) => {
+        const rooms =
+          opts.roomNames.length > 0 ? `Rooms: ${opts.roomNames.join(", ")}.` : "";
+        return `360° virtual tour — “${opts.title}”. ${rooms} Walk inside here: ${opts.url}`;
+      },
       noPanorama: "Panorama unavailable. Showing room photos fallback carousel.",
       walkHint:
-        "All stitched rooms load in one viewer — walk through like Street View: drag to look around, tap arrows to move between rooms.",
+        "All stitched rooms load in one viewer — drag to look around, tap the arrows in the scene or the room buttons below to move.",
       noStitchYet: "pending stitch",
+      viewerRoomNav: "Go to room",
+      youAreIn: (name: string) => `You’re viewing: ${name}`,
     },
   };
   return t[locale];

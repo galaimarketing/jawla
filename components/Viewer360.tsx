@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createJawlaViewLimiter } from "@/lib/marzipano-limits";
 import { cn } from "@/lib/utils";
 import type { Hotspot } from "@/lib/types";
 
@@ -50,8 +51,8 @@ export default function Viewer360({
       const source = Marzipano.ImageUrlSource.fromString(panoramaUrl);
       const geometry = new Marzipano.EquirectGeometry([{ width: 4096 }]);
       const view = new Marzipano.RectilinearView(
-        { yaw: 0, pitch: 0, fov: Math.PI / 2 },
-        Marzipano.RectilinearView.limit.traditional(1024, 100 * Math.PI / 180),
+        { yaw: 0, pitch: 0, fov: Math.PI / 2.25 },
+        createJawlaViewLimiter(Marzipano),
       );
 
       const scene = viewer.createScene({ source, geometry, view, pinFirstLevel: true });
@@ -89,7 +90,7 @@ export default function Viewer360({
 
   return (
     <div className={cn("relative overflow-hidden rounded-2xl border border-white/10 bg-[#020817]/80 backdrop-blur-sm", className)}>
-      <div ref={containerRef} className="h-[55vh] min-h-[320px] w-full" />
+      <div ref={containerRef} className="aspect-[2/1] min-h-[240px] w-full max-h-[min(70vh,720px)] sm:min-h-[320px]" />
       {interactive ? (
         <div className="absolute bottom-3 left-3 rounded-xl border border-white/20 bg-[#0b1228]/80 px-3 py-2 text-xs text-white backdrop-blur-sm">
           <p>Center point yaw: {currentPoint.yaw.toFixed(3)}</p>

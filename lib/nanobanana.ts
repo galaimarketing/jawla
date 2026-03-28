@@ -1,3 +1,5 @@
+import { stitchPhotosWithGeminiImage } from "@/lib/stitch-gemini-image";
+
 interface CreatePanoramaInput {
   images: string[];
 }
@@ -46,7 +48,6 @@ class NanobananaHttpClient implements NanobananaClient {
 
     const limitedImages = input.images.slice(0, 8);
 
-    // Step 1: submit generation task using edit mode
     const generateRes = await fetch(`${this.baseUrl}/api/nano-banana-pro/generate`, {
       method: "POST",
       headers: {
@@ -55,11 +56,11 @@ class NanobananaHttpClient implements NanobananaClient {
       },
       body: JSON.stringify({
         prompt:
-          "Create a seamless equirectangular 360-degree panorama image from these room photos. " +
-          "The output should be a single wide panoramic photograph suitable for a virtual tour viewer. " +
-          "Maintain realistic lighting and perspective consistency.",
+          "Create a seamless equirectangular 360-degree panorama from these interior photos. " +
+          "Output a single 2:1 wide image suitable for a 360 viewer (full horizontal wrap, natural sky/floor). " +
+          "Blend overlaps; keep lighting consistent and photorealistic.",
         mode: "edit",
-        aspectRatio: "16:9",
+        aspectRatio: "2:1",
         imageQuality: "2K",
         inputImageUrls: limitedImages,
       }),
@@ -77,9 +78,7 @@ class NanobananaHttpClient implements NanobananaClient {
     }
 
     const { generationId } = generateData;
-    console.log(`[nanobanana] Task created: ${generationId}`);
 
-    // Step 2: poll for completion
     for (let i = 0; i < MAX_POLLS; i++) {
       await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
 
@@ -93,12 +92,10 @@ class NanobananaHttpClient implements NanobananaClient {
       });
 
       if (!statusRes.ok) {
-        console.warn(`[nanobanana] Status poll ${i + 1} HTTP ${statusRes.status}`);
         continue;
       }
 
       const statusData = (await statusRes.json()) as CheckStatusResponse;
-      console.log(`[nanobanana] Poll ${i + 1}: status=${statusData.status} progress=${statusData.progress ?? "?"}%`);
 
       if (statusData.status === "completed" && statusData.imageUrl) {
         return { panoramaUrl: statusData.imageUrl };
@@ -128,7 +125,26 @@ async function retry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
   throw lastError;
 }
 
-export async function stitchRoomToPanorama(photoUrls: string[]): Promise<{ panoramaUrl: string; fallback: boolean }> {
+export type StitchSource = "nanobanana" | "gemini" | "raw";
+
+export type StitchBytesResult = {
+  bytes: Uint8Array;
+  contentType: string;
+  fallback: boolean;
+  source: StitchSource;
+};
+
+async function fetchUrlBytes(url: string): Promise<{ bytes: Uint8Array; contentType: string }> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch image (${res.status})`);
+  const contentType = res.headers.get("content-type")?.split(";")[0]?.trim() || "image/jpeg";
+  return { bytes: new Uint8Array(await res.arrayBuffer()), contentType };
+}
+
+/**
+ * Order: Nanobanana (when configured) → Gemini image (GEMINI_API_KEY) → first photo bytes.
+ */
+export async function stitchRoomToPanorama(photoUrls: string[]): Promise<StitchBytesResult> {
   if (photoUrls.length === 0) {
     throw new Error("No photos provided for stitching.");
   }
@@ -137,9 +153,28 @@ export async function stitchRoomToPanorama(photoUrls: string[]): Promise<{ panor
 
   try {
     const result = await retry(() => client.createPanorama({ images: photoUrls }));
-    return { panoramaUrl: result.panoramaUrl, fallback: false };
+    const { bytes, contentType } = await fetchUrlBytes(result.panoramaUrl);
+    return { bytes, contentType, fallback: false, source: "nanobanana" };
   } catch (error) {
-    console.error("[nanobanana] Stitching failed, using fallback", error);
-    return { panoramaUrl: photoUrls[0], fallback: true };
+    console.error("[stitch] Nanobanana unavailable or failed", error);
   }
+
+  const geminiBytes = await stitchPhotosWithGeminiImage(photoUrls);
+  if (geminiBytes?.length) {
+    return {
+      bytes: geminiBytes,
+      contentType: "image/png",
+      fallback: false,
+      source: "gemini",
+    };
+  }
+
+  console.warn("[stitch] Using raw first photo as panorama (expect stretch in viewer until you restitch).");
+  const raw = await fetchUrlBytes(photoUrls[0]);
+  return {
+    bytes: raw.bytes,
+    contentType: raw.contentType,
+    fallback: true,
+    source: "raw",
+  };
 }

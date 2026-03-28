@@ -50,15 +50,13 @@ export default function PublicTourViewer({ slug, title, description, rooms }: Pu
 
   const shareUrl =
     typeof window !== "undefined" ? `${window.location.origin}/t/${slug}` : `${process.env.NEXT_PUBLIC_APP_URL}/t/${slug}`;
-  const waText = encodeURIComponent(p.waText(shareUrl));
-
-  function selectRoom(roomId: string) {
-    setActiveRoomId(roomId);
-    const target = walkable.find((r) => r.id === roomId);
-    if (target && viewerRef.current) {
-      viewerRef.current.goToRoom(roomId);
-    }
-  }
+  const waText = encodeURIComponent(
+    p.waText({
+      url: shareUrl,
+      title,
+      roomNames: sortedRooms.map((r) => r.name),
+    }),
+  );
 
   if (!activeRoom) {
     return <p className="text-sm text-slate-300">{p.noRooms}</p>;
@@ -114,6 +112,11 @@ export default function PublicTourViewer({ slug, title, description, rooms }: Pu
           ref={viewerRef}
           rooms={walkable}
           initialRoomId={activeRoomId}
+          activeRoomId={activeRoomId}
+          navCopy={{
+            roomNavTitle: p.viewerRoomNav,
+            youAreIn: p.youAreIn,
+          }}
           onRoomChange={setActiveRoomId}
         />
       ) : (

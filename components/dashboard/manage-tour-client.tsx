@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Viewer360 from "@/components/Viewer360";
 import { createClient } from "@/lib/supabase/client";
-import { captureSteps, manageTour } from "@/lib/locale-copy";
+import { captureStepsForTour, manageTour } from "@/lib/locale-copy";
 import { useLanguage } from "@/contexts/language-context";
 import type { Hotspot, Room, RoomPhoto, Tour } from "@/lib/types";
 
@@ -18,13 +18,12 @@ interface ManageTourClientProps {
   rooms: RoomWithData[];
 }
 
-const MIN_STITCH_PHOTOS = 4;
+const MIN_STITCH_PHOTOS = 2;
 
 export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTourClientProps) {
   const router = useRouter();
   const { locale } = useLanguage();
   const m = manageTour(locale);
-  const captureStepList = captureSteps(locale);
   const [rooms, setRooms] = useState(initialRooms);
   const [selectedRoomId, setSelectedRoomId] = useState(initialRooms[0]?.id ?? "");
   const [newRoomName, setNewRoomName] = useState("");
@@ -34,12 +33,32 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
   const [targetRoomId, setTargetRoomId] = useState(initialRooms[1]?.id ?? initialRooms[0]?.id ?? "");
   const [label, setLabel] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [autoLinking, setAutoLinking] = useState(false);
 
   const selectedRoom = useMemo(() => rooms.find((room) => room.id === selectedRoomId) ?? rooms[0], [rooms, selectedRoomId]);
+  const connectRoomName = useMemo(() => {
+    const other = rooms.find((r) => r.id === targetRoomId && r.id !== selectedRoom?.id);
+    return other?.name ?? null;
+  }, [rooms, targetRoomId, selectedRoom?.id]);
+
+  const captureStepList = useMemo(
+    () => captureStepsForTour(locale, connectRoomName),
+    [locale, connectRoomName],
+  );
+
   const uploadedCount = selectedRoom?.room_photos.length ?? 0;
   const remainingRequired = Math.max(MIN_STITCH_PHOTOS - uploadedCount, 0);
   const nextStepIndex = Math.min(uploadedCount, captureStepList.length - 1);
   const canGeneratePanorama = !!selectedRoom && uploadedCount >= MIN_STITCH_PHOTOS && !stitching;
+  const showDoorLive = Boolean(connectRoomName && nextStepIndex === 4);
+
+  useEffect(() => {
+    const others = rooms.filter((r) => r.id !== selectedRoomId);
+    if (others.length === 0) return;
+    if (!others.some((r) => r.id === targetRoomId)) {
+      setTargetRoomId(others[0].id);
+    }
+  }, [rooms, selectedRoomId, targetRoomId]);
 
   async function refreshTourData() {
     const response = await fetch(`/api/tours?tourId=${tour.id}`);
@@ -64,6 +83,23 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
 
     setNewRoomName("");
     await refreshTourData();
+  }
+
+  async function autoLinkRoomsInOrder() {
+    setAutoLinking(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/tours/${tour.id}/auto-link-rooms`, { method: "POST" });
+      const data = (await res.json()) as { created?: number; message?: string };
+      if (!res.ok) {
+        setMessage(data.message || m.autoLinkFailed);
+        return;
+      }
+      setMessage(m.autoLinkDone(data.created ?? 0));
+      await refreshTourData();
+    } finally {
+      setAutoLinking(false);
+    }
   }
 
   async function handleUpload(files: FileList | null) {
@@ -240,6 +276,28 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
           <div className="rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm">
             <h3 className="mb-2 text-sm font-medium text-white">{m.guidedTitle}</h3>
             <p className="text-xs text-slate-300">{m.guidedIntro(MIN_STITCH_PHOTOS)}</p>
+            <div className="mt-3">
+              <label className="mb-1 block text-xs text-slate-400">{m.guideConnectToward}</label>
+              <select
+                className="w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
+                value={targetRoomId}
+                onChange={(e) => setTargetRoomId(e.target.value)}
+                disabled={rooms.filter((r) => r.id !== selectedRoom?.id).length === 0}
+              >
+                {rooms
+                  .filter((room) => room.id !== selectedRoom?.id)
+                  .map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            {showDoorLive ? (
+              <p className="mt-2 rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-3 py-2 text-xs font-medium text-cyan-100">
+                {m.doorLive(connectRoomName!)}
+              </p>
+            ) : null}
             <ol className="mt-3 space-y-2 text-xs">
               {captureStepList.map((step, index) => {
                 const done = uploadedCount > index;
@@ -284,6 +342,7 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
             <h3 className="mb-2 text-sm font-medium">{m.hotspotTitle}</h3>
             <p className="text-xs text-slate-400">{m.hotspotWalkHint}</p>
             <p className="mt-2 text-xs text-slate-300">{m.hotspotHint}</p>
+            <p className="mt-1 text-xs text-slate-500">{m.hotspotTargetHint}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <input
                 value={point.yaw}
@@ -303,20 +362,6 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
               />
             </div>
 
-            <select
-              className="mt-2 w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
-              value={targetRoomId}
-              onChange={(e) => setTargetRoomId(e.target.value)}
-            >
-              {rooms
-                .filter((room) => room.id !== selectedRoom?.id)
-                .map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.name}
-                  </option>
-                ))}
-            </select>
-
             <input
               className="mt-2 w-full rounded-xl border border-white/10 bg-[#020817]/90 px-3 py-2 text-sm"
               placeholder={m.labelPlaceholder}
@@ -326,6 +371,15 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
 
             <button onClick={createHotspot} className="mt-2 w-full rounded-full bg-white px-4 py-2 text-sm font-medium text-black">
               {m.saveHotspot}
+            </button>
+
+            <button
+              type="button"
+              disabled={autoLinking || rooms.length < 2}
+              onClick={() => void autoLinkRoomsInOrder()}
+              className="mt-3 w-full rounded-full border border-white/25 px-4 py-2 text-sm text-white hover:bg-white/10 disabled:opacity-50"
+            >
+              {autoLinking ? m.autoLinkWorking : m.autoLinkRooms}
             </button>
           </div>
 

@@ -105,3 +105,17 @@ body::after {
 [dir="rtl"] .jawla-link-hotspot-chevron {
   transform: scaleX(-1);
 }
+
+@keyframes jawla-hotspot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(56, 189, 248, 0);
+  }
+}
+
+.jawla-link-hotspot--pulse .jawla-link-hotspot-inner {
+  animation: jawla-hotspot-pulse 2.2s ease-out infinite;
+}

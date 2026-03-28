@@ -7,7 +7,8 @@ interface Params {
   params: Promise<{ roomId: string }>;
 }
 
-const MIN_STITCH_PHOTOS = 4;
+/** Minimum photos; AI can fuse a small set. Four+ still recommended for quality. */
+const MIN_STITCH_PHOTOS = 2;
 
 export async function POST(_request: Request, { params }: Params) {
   const { roomId } = await params;
@@ -42,7 +43,7 @@ export async function POST(_request: Request, { params }: Params) {
   if (photos.length < MIN_STITCH_PHOTOS) {
     return NextResponse.json(
       {
-        message: `Need at least ${MIN_STITCH_PHOTOS} photos (one per wall) before stitching. Currently uploaded: ${photos.length}.`,
+        message: `Need at least ${MIN_STITCH_PHOTOS} photos before stitching. Currently uploaded: ${photos.length}.`,
       },
       { status: 400 },
     );
@@ -59,19 +60,15 @@ export async function POST(_request: Request, { params }: Params) {
     signedUrls.push(data.signedUrl);
   }
 
-  const { panoramaUrl, fallback } = await stitchRoomToPanorama(signedUrls);
+  const stitch = await stitchRoomToPanorama(signedUrls);
 
-  const imageResponse = await fetch(panoramaUrl);
-  if (!imageResponse.ok) {
-    return NextResponse.json({ message: "Failed to fetch generated panorama file" }, { status: 400 });
-  }
+  const ext =
+    stitch.contentType.includes("png") ? "png" : stitch.contentType.includes("webp") ? "webp" : "jpg";
+  const panoramaPath = `${room.tour_id}/${room.id}/panorama.${ext}`;
 
-  const bytes = await imageResponse.arrayBuffer();
-  const panoramaPath = `${room.tour_id}/${room.id}/panorama.jpg`;
-
-  const { error: uploadError } = await admin.storage.from("tour-public").upload(panoramaPath, bytes, {
+  const { error: uploadError } = await admin.storage.from("tour-public").upload(panoramaPath, stitch.bytes, {
     upsert: true,
-    contentType: "image/jpeg",
+    contentType: stitch.contentType,
   });
 
   if (uploadError) {
@@ -89,11 +86,21 @@ export async function POST(_request: Request, { params }: Params) {
     return NextResponse.json({ message: updateError.message }, { status: 400 });
   }
 
+  let message: string;
+  if (stitch.fallback) {
+    message =
+      "Stitching services were unavailable; uploaded your first photo as a temporary panorama (may look stretched). " +
+      "Set GEMINI_API_KEY for AI blending or NANOBANANA_API_URL + key for full stitch.";
+  } else if (stitch.source === "gemini") {
+    message = "Panorama generated with Gemini image fusion (wide 2:1 when supported).";
+  } else {
+    message = "Panorama generated successfully.";
+  }
+
   return NextResponse.json({
     panoramaUrl: publicData.publicUrl,
-    fallback,
-    message: fallback
-      ? "Stitching API unavailable. Used fallback panorama from first uploaded image."
-      : "Panorama generated successfully.",
+    fallback: stitch.fallback,
+    source: stitch.source,
+    message,
   });
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { createJawlaViewLimiter } from "@/lib/marzipano-limits";
 import { cn } from "@/lib/utils";
 import type { Hotspot, Room, RoomPhoto } from "@/lib/types";
 
@@ -28,28 +29,33 @@ const HouseWalkViewer = forwardRef<
   HouseWalkViewerHandle,
   {
     rooms: RoomWalk[];
-    /** Preferred first scene (e.g. selected room). Falls back to first by order. Not reactive after mount. */
     initialRoomId?: string | null;
+    /** Syncs with parent when jumping from chips or hotspots. */
+    activeRoomId?: string | null;
+    navCopy?: {
+      roomNavTitle: string;
+      youAreIn: (name: string) => string;
+    };
     onRoomChange?: (roomId: string) => void;
     className?: string;
   }
->(function HouseWalkViewer({ rooms, initialRoomId, onRoomChange, className }, ref) {
+>(function HouseWalkViewer({ rooms, initialRoomId, activeRoomId, navCopy, onRoomChange, className }, ref) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewerRef = useRef<{ destroy?: () => void } | null>(null);
   const sceneByRoomRef = useRef<Map<string, { switchTo: (opts?: { transitionDuration?: number }) => void }>>(new Map());
+  const jumpToRoomRef = useRef<(roomId: string) => void>(() => {});
   const onRoomChangeRef = useRef(onRoomChange);
   onRoomChangeRef.current = onRoomChange;
   const initialRoomIdRef = useRef(initialRoomId);
   initialRoomIdRef.current = initialRoomId;
 
+  const [navReady, setNavReady] = useState(false);
+
   useImperativeHandle(
     ref,
     () => ({
       goToRoom: (roomId: string) => {
-        const scene = sceneByRoomRef.current.get(roomId);
-        if (!scene) return;
-        scene.switchTo({ transitionDuration: TRANSITION_MS });
-        onRoomChangeRef.current?.(roomId);
+        jumpToRoomRef.current(roomId);
       },
     }),
     [],
@@ -70,8 +76,16 @@ const HouseWalkViewer = forwardRef<
       });
       viewerRef.current = viewer;
       sceneByRoomRef.current.clear();
+      setNavReady(false);
 
-      const limiter = Marzipano.RectilinearView.limit.traditional(1024, (100 * Math.PI) / 180);
+      jumpToRoomRef.current = (roomId: string) => {
+        const targetScene = sceneByRoomRef.current.get(roomId);
+        if (!targetScene) return;
+        targetScene.switchTo({ transitionDuration: TRANSITION_MS });
+        onRoomChangeRef.current?.(roomId);
+      };
+
+      const limiter = createJawlaViewLimiter(Marzipano);
 
       const allHotspots = new Map<string, Hotspot[]>();
       for (const room of sorted) {
@@ -81,7 +95,7 @@ const HouseWalkViewer = forwardRef<
       for (const room of sorted) {
         const source = Marzipano.ImageUrlSource.fromString(room.panorama_url);
         const geometry = new Marzipano.EquirectGeometry([{ width: 4096 }]);
-        const view = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: Math.PI / 2 }, limiter);
+        const view = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: Math.PI / 2.25 }, limiter);
         const scene = viewer.createScene({
           source,
           geometry,
@@ -96,8 +110,8 @@ const HouseWalkViewer = forwardRef<
 
           const btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "jawla-link-hotspot";
-          btn.setAttribute("aria-label", targetRoom.name);
+          btn.className = "jawla-link-hotspot jawla-link-hotspot--pulse";
+          btn.setAttribute("aria-label", `${targetRoom.name}`);
 
           const inner = document.createElement("span");
           inner.className = "jawla-link-hotspot-inner";
@@ -120,10 +134,7 @@ const HouseWalkViewer = forwardRef<
           btn.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const targetScene = sceneByRoomRef.current.get(h.target_room_id);
-            if (!targetScene) return;
-            targetScene.switchTo({ transitionDuration: TRANSITION_MS });
-            onRoomChangeRef.current?.(h.target_room_id);
+            jumpToRoomRef.current(h.target_room_id);
           });
 
           scene.hotspotContainer().createHotspot(btn, { yaw: h.yaw, pitch: h.pitch });
@@ -139,19 +150,59 @@ const HouseWalkViewer = forwardRef<
         sceneByRoomRef.current.get(startId)?.switchTo({ transitionDuration: 0 });
         onRoomChangeRef.current?.(startId);
       }
+
+      if (!cancelled) setNavReady(true);
     })();
 
     return () => {
       cancelled = true;
+      setNavReady(false);
+      jumpToRoomRef.current = () => {};
       viewerRef.current?.destroy?.();
       viewerRef.current = null;
       sceneByRoomRef.current.clear();
     };
   }, [rooms]);
 
+  const sorted = [...rooms].sort((a, b) => a.order_index - b.order_index);
+  const currentId =
+    activeRoomId && sorted.some((r) => r.id === activeRoomId) ? activeRoomId : (sorted[0]?.id ?? "");
+  const currentRoom = sorted.find((r) => r.id === currentId);
+  const otherRooms = sorted.filter((r) => r.id !== currentId);
+
   return (
     <div className={cn("relative overflow-hidden rounded-2xl border border-white/10 bg-[#020817]/80 backdrop-blur-sm", className)}>
-      <div ref={containerRef} className="h-[min(70vh,720px)] min-h-[360px] w-full" />
+      <div
+        ref={containerRef}
+        className="aspect-[2/1] min-h-[240px] w-full max-h-[min(75vh,760px)] sm:min-h-[320px]"
+      />
+
+      {navCopy && currentRoom ? (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/55 to-transparent px-3 pb-8 pt-2 text-center sm:px-4">
+          <p className="text-xs font-medium text-white/95 drop-shadow">{navCopy.youAreIn(currentRoom.name)}</p>
+        </div>
+      ) : null}
+
+      {navCopy && otherRooms.length > 0 ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-2 bg-gradient-to-t from-black/70 via-black/40 to-transparent px-2 pb-3 pt-10 sm:px-4">
+          <p className="pointer-events-none text-[10px] font-space uppercase tracking-wider text-white/70">
+            {navCopy.roomNavTitle}
+          </p>
+          <div className="pointer-events-auto flex max-w-full flex-wrap justify-center gap-2">
+            {otherRooms.map((room) => (
+              <button
+                key={room.id}
+                type="button"
+                disabled={!navReady}
+                onClick={() => jumpToRoomRef.current(room.id)}
+                className="rounded-full border border-white/35 bg-[#0b1228]/90 px-3 py-1.5 text-xs font-medium text-white shadow-lg backdrop-blur-sm transition hover:border-white/60 hover:bg-white/15 disabled:opacity-40"
+              >
+                {room.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 });

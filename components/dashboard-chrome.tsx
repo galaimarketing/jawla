@@ -11,10 +11,13 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
   const n = nav(locale);
 
   return (
-    <main className="min-h-screen" dir={locale === "ar" ? "rtl" : "ltr"}>
-      <header className="fixed left-1/2 top-5 z-30 w-[calc(100%-1.5rem)] max-w-6xl -translate-x-1/2 rounded-full border border-white/15 bg-[#0b1228]/65 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+    <main
+      className="min-h-screen pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+      dir={locale === "ar" ? "rtl" : "ltr"}
+    >
+      <header className="fixed left-1/2 top-[max(0.75rem,env(safe-area-inset-top))] z-30 w-[calc(100%-1rem)] max-w-6xl -translate-x-1/2 rounded-2xl border border-white/15 bg-[#0b1228]/80 backdrop-blur-md sm:top-5 sm:w-[calc(100%-1.5rem)] sm:rounded-full">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
+          <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:gap-4 sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden">
             <Link href="/" className="font-semibold">
               {n.brand}
             </Link>
@@ -32,14 +35,19 @@ export default function DashboardChrome({ children }: { children: React.ReactNod
             </Link>
             <LocaleToggle />
           </div>
-          <form action={signOutAction}>
-            <button type="submit" className="rounded-full border border-white/20 px-4 py-1.5 text-sm hover:bg-white/10">
+          <form action={signOutAction} className="shrink-0 sm:ms-auto">
+            <button
+              type="submit"
+              className="w-full rounded-full border border-white/20 px-4 py-1.5 text-sm hover:bg-white/10 sm:w-auto"
+            >
               {n.signOut}
             </button>
           </form>
         </div>
       </header>
-      <div className="mx-auto max-w-6xl px-4 pb-6 pt-28">{children}</div>
+      <div className="mx-auto max-w-6xl px-4 pb-8 pt-[calc(8.5rem+env(safe-area-inset-top))] sm:pb-6 sm:pt-32">
+        {children}
+      </div>
     </main>
   );
 }

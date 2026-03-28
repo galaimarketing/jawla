@@ -58,12 +58,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     data.rooms.find((room) => room.panorama_url)?.panorama_url ||
     "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop";
 
+  const roomNames = data.rooms.map((r) => r.name).filter(Boolean);
+  const roomsSnippet =
+    roomNames.length > 0 ? ` Rooms: ${roomNames.join(", ")}.` : "";
+  const metaDescription = `360° virtual tour — ${data.tour.title}.${roomsSnippet} Walk through every space in the browser.`;
+
   return {
     title: `${data.tour.title} | jawla`,
-    description: `${data.tour.title} interactive 360 virtual tour`,
+    description: metaDescription,
     openGraph: {
       title: data.tour.title,
-      description: `${data.tour.title} interactive 360 virtual tour`,
+      description: metaDescription,
       images: [ogImage],
       type: "website",
     },
@@ -76,7 +81,10 @@ export default async function PublicTourPage({ params }: PageProps) {
 
   if (!data) notFound();
 
-  const description = `${data.tour.title} interactive 360 virtual tour`;
+  const roomNames = data.rooms.map((r) => r.name).filter(Boolean);
+  const roomsSnippet =
+    roomNames.length > 0 ? ` Rooms: ${roomNames.join(", ")}.` : "";
+  const description = `360° virtual tour — ${data.tour.title}.${roomsSnippet}`;
 
   return (
     <main className="min-h-screen px-4 py-8">
