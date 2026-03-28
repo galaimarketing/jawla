@@ -208,37 +208,34 @@ const ShaderMaterial = ({
   });
 
   const preparedUniforms = useMemo(() => {
-    const nextUniforms: Record<string, unknown> = {};
+    const nextUniforms: Record<string, THREE.IUniform> = {};
 
     for (const uniformName in uniforms) {
       const uniform = uniforms[uniformName] as { value: unknown; type: string };
 
       switch (uniform.type) {
         case "uniform1f":
-          nextUniforms[uniformName] = { value: uniform.value, type: "1f" };
+          nextUniforms[uniformName] = { value: uniform.value };
           break;
         case "uniform1i":
-          nextUniforms[uniformName] = { value: uniform.value, type: "1i" };
+          nextUniforms[uniformName] = { value: uniform.value };
           break;
         case "uniform3f":
           nextUniforms[uniformName] = {
             value: new THREE.Vector3().fromArray(uniform.value as number[]),
-            type: "3f",
           };
           break;
         case "uniform1fv":
-          nextUniforms[uniformName] = { value: uniform.value, type: "1fv" };
+          nextUniforms[uniformName] = { value: uniform.value };
           break;
         case "uniform3fv":
           nextUniforms[uniformName] = {
             value: (uniform.value as number[][]).map((v: number[]) => new THREE.Vector3().fromArray(v)),
-            type: "3fv",
           };
           break;
         case "uniform2f":
           nextUniforms[uniformName] = {
             value: new THREE.Vector2().fromArray(uniform.value as number[]),
-            type: "2f",
           };
           break;
         default:
@@ -247,7 +244,7 @@ const ShaderMaterial = ({
       }
     }
 
-    nextUniforms.u_time = { value: 0, type: "1f" };
+    nextUniforms.u_time = { value: 0 };
     nextUniforms.u_resolution = {
       value: new THREE.Vector2(size.width * 2, size.height * 2),
     };
