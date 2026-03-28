@@ -15,6 +15,16 @@ interface ManageTourClientProps {
   rooms: RoomWithData[];
 }
 
+const MIN_STITCH_PHOTOS = 4;
+
+const CAPTURE_STEPS = [
+  "Stand in the center, face wall 1, and keep floor + ceiling visible.",
+  "Rotate 90° right to wall 2 with ~30% overlap from previous photo.",
+  "Rotate to wall 3 with the same height and overlap.",
+  "Rotate to wall 4 and complete the full 360 loop.",
+  "Optional: capture one corner detail to improve stitching continuity.",
+];
+
 export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTourClientProps) {
   const [rooms, setRooms] = useState(initialRooms);
   const [selectedRoomId, setSelectedRoomId] = useState(initialRooms[0]?.id ?? "");
@@ -27,6 +37,10 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
   const [message, setMessage] = useState<string | null>(null);
 
   const selectedRoom = useMemo(() => rooms.find((room) => room.id === selectedRoomId) ?? rooms[0], [rooms, selectedRoomId]);
+  const uploadedCount = selectedRoom?.room_photos.length ?? 0;
+  const remainingRequired = Math.max(MIN_STITCH_PHOTOS - uploadedCount, 0);
+  const nextStepIndex = Math.min(uploadedCount, CAPTURE_STEPS.length - 1);
+  const canGeneratePanorama = !!selectedRoom && uploadedCount >= MIN_STITCH_PHOTOS && !stitching;
 
   async function refreshTourData() {
     const response = await fetch(`/api/tours?tourId=${tour.id}`);
@@ -86,7 +100,13 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
       }
 
       await refreshTourData();
-      setMessage("Photos uploaded.");
+      const uploadedNow = uploadedCount + files.length;
+      const remaining = Math.max(MIN_STITCH_PHOTOS - uploadedNow, 0);
+      setMessage(
+        remaining === 0
+          ? "Great. You have enough photos to generate panorama."
+          : `Photo uploaded. Add ${remaining} more guided shot${remaining > 1 ? "s" : ""}.`,
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Upload failed");
     } finally {
@@ -96,6 +116,11 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
 
   async function generatePanorama() {
     if (!selectedRoom) return;
+    if (uploadedCount < MIN_STITCH_PHOTOS) {
+      setMessage(`Please capture at least ${MIN_STITCH_PHOTOS} photos (one per wall) before generating panorama.`);
+      return;
+    }
+
     setStitching(true);
     setMessage(null);
 
@@ -215,21 +240,45 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
           )}
 
           <div className="rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm">
-            <label className="mb-2 block text-sm text-slate-300">Upload room photos</label>
+            <h3 className="mb-2 text-sm font-medium text-white">Guided room capture</h3>
+            <p className="text-xs text-slate-300">
+              Capture photos in sequence for better stitching. Minimum required: {MIN_STITCH_PHOTOS}.
+            </p>
+            <ol className="mt-3 space-y-2 text-xs">
+              {CAPTURE_STEPS.map((step, index) => {
+                const done = uploadedCount > index;
+                const active = !done && index === nextStepIndex;
+                return (
+                  <li key={step} className={`rounded-lg border px-2 py-1.5 ${done ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200" : active ? "border-cyan-400/40 bg-cyan-500/10 text-cyan-100" : "border-white/10 bg-[#020817]/60 text-slate-300"}`}>
+                    <span className="font-semibold">Step {index + 1}:</span> {step}
+                  </li>
+                );
+              })}
+            </ol>
+
+            <label className="mb-2 mt-4 block text-sm text-slate-300">
+              {remainingRequired > 0
+                ? `Next photo (${uploadedCount + 1}/${MIN_STITCH_PHOTOS})`
+                : "Add optional extra photo"}
+            </label>
             <input
               type="file"
               accept="image/*"
               capture="environment"
-              multiple
+              multiple={false}
               onChange={(e) => void handleUpload(e.target.files)}
               className="w-full text-sm"
             />
             <button
               onClick={generatePanorama}
-              disabled={stitching || !selectedRoom}
+              disabled={!canGeneratePanorama}
               className="mt-3 rounded-full bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-70"
             >
-              {stitching ? "Generating..." : "Generate panorama"}
+              {stitching
+                ? "Generating..."
+                : remainingRequired > 0
+                  ? `Need ${remainingRequired} more photo${remainingRequired > 1 ? "s" : ""}`
+                  : "Generate panorama"}
             </button>
           </div>
         </div>

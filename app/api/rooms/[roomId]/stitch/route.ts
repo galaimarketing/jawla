@@ -7,6 +7,8 @@ interface Params {
   params: Promise<{ roomId: string }>;
 }
 
+const MIN_STITCH_PHOTOS = 4;
+
 export async function POST(_request: Request, { params }: Params) {
   const { roomId } = await params;
   const supabase = await createClient();
@@ -35,6 +37,15 @@ export async function POST(_request: Request, { params }: Params) {
 
   if (!photos || photos.length === 0) {
     return NextResponse.json({ message: "No room photos found" }, { status: 400 });
+  }
+
+  if (photos.length < MIN_STITCH_PHOTOS) {
+    return NextResponse.json(
+      {
+        message: `Need at least ${MIN_STITCH_PHOTOS} photos (one per wall) before stitching. Currently uploaded: ${photos.length}.`,
+      },
+      { status: 400 },
+    );
   }
 
   const admin = createAdminClient();
