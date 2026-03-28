@@ -20,14 +20,29 @@ export default function AuthPage() {
     try {
       const supabase = createClient();
       const redirectTo = `${window.location.origin}/auth/callback`;
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo },
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
       });
 
       if (error) {
         setMessage(error.message);
+        return;
       }
+
+      if (data?.url) {
+        window.location.assign(data.url);
+      } else {
+        setMessage("Google sign-in URL was not returned. Please try again.");
+      }
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Google sign-in failed.");
     } finally {
       setLoading(false);
     }
