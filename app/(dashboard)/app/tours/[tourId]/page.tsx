@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import ManageTourClient from "@/components/dashboard/manage-tour-client";
 import { TourManageIntro } from "@/components/tour-manage-intro";
+import { signRoomPhotoUrls } from "@/lib/sign-room-photos";
 import { createClient } from "@/lib/supabase/server";
 import type { Hotspot, Room, RoomPhoto, Tour } from "@/lib/types";
 
@@ -35,10 +36,11 @@ export default async function TourManagePage({ params }: PageProps) {
 
   const photoRows = (photos ?? []) as RoomPhoto[];
   const hotspotRows = (hotspots ?? []) as Hotspot[];
+  const signedPhotos = await signRoomPhotoUrls(photoRows);
 
   const roomsWithData = roomRows.map((room) => ({
     ...room,
-    room_photos: photoRows.filter((p) => p.room_id === room.id),
+    room_photos: signedPhotos.filter((p) => p.room_id === room.id),
     hotspots: hotspotRows.filter((h) => h.room_id === room.id),
   }));
 

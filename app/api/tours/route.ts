@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { signRoomPhotoUrls } from "@/lib/sign-room-photos";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/slug";
 import type { Hotspot, Room, RoomPhoto } from "@/lib/types";
@@ -50,10 +51,11 @@ export async function GET(request: Request) {
 
   const photoRows = (photos ?? []) as RoomPhoto[];
   const hotspotRows = (hotspots ?? []) as Hotspot[];
+  const signedPhotos = await signRoomPhotoUrls(photoRows);
 
   const responseRooms = roomRows.map((room) => ({
     ...room,
-    room_photos: photoRows.filter((photo) => photo.room_id === room.id),
+    room_photos: signedPhotos.filter((photo) => photo.room_id === room.id),
     hotspots: hotspotRows.filter((hotspot) => hotspot.room_id === room.id),
   }));
 

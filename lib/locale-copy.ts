@@ -27,6 +27,10 @@ export function dashboardHome(locale: Locale) {
       loadFailed: "تعذّر تحميل الجولات:",
       view: "عرض",
       manage: "إدارة",
+      delete: "حذف",
+      deleteConfirm: "حذف هذه الجولة وجميع غرفها وصورها؟ لا يمكن التراجع.",
+      deleting: "جاري الحذف...",
+      deleteFailed: "تعذّر حذف الجولة",
     },
     en: {
       title: "Your tours",
@@ -35,6 +39,10 @@ export function dashboardHome(locale: Locale) {
       loadFailed: "Failed to load tours:",
       view: "View",
       manage: "Manage",
+      delete: "Delete",
+      deleteConfirm: "Delete this tour and all its rooms and photos? This cannot be undone.",
+      deleting: "Deleting...",
+      deleteFailed: "Could not delete tour",
     },
   };
   return t[locale];
@@ -176,6 +184,8 @@ export function manageTour(locale: Locale) {
       step: "الخطوة",
       nextPhoto: (cur: number, min: number) => `الصورة التالية (${cur}/${min})`,
       optionalExtra: "صورة إضافية اختيارية",
+      openCamera: "فتح الكاميرا",
+      stitchWaitHint: "الدمج بالذكاء الاصطناعي قد يستغرق دقيقة أو اثنتين. اترك الصفحة مفتوحة.",
       generating: "جاري الإنشاء...",
       needMore: (n: number) => (n === 1 ? "يلزم صورة واحدة أخرى" : `يلزم ${n} صور أخرى`),
       generatePanorama: "إنشاء بانوراما",
@@ -200,6 +210,7 @@ export function manageTour(locale: Locale) {
       needMinPhotos: (min: number) =>
         `يلزم التقاط ${min} صور على الأقل (واحدة لكل جدار) قبل إنشاء البانوراما.`,
       stitchFailed: "فشل الدمج",
+      stitchTimedOut: "انتهت مهلة الخادم — الدمج قد يحتاج أكثر من دقيقة؛ جرّب خطة استضافة تسمح بوقت أطول.",
       failedHotspot: "تعذّر إنشاء نقطة الانتقال",
       hotspotAdded: "تمت إضافة نقطة الانتقال.",
       failedPublish: "تعذّر نشر الجولة",
@@ -226,6 +237,8 @@ export function manageTour(locale: Locale) {
       step: "Step",
       nextPhoto: (cur: number, min: number) => `Next photo (${cur}/${min})`,
       optionalExtra: "Add optional extra photo",
+      openCamera: "Open camera",
+      stitchWaitHint: "AI stitching can take 1–2 minutes. Keep this page open.",
       generating: "Generating...",
       needMore: (n: number) => `Need ${n} more photo${n > 1 ? "s" : ""}`,
       generatePanorama: "Generate panorama",
@@ -250,6 +263,7 @@ export function manageTour(locale: Locale) {
       needMinPhotos: (min: number) =>
         `Please capture at least ${min} photos (one per wall) before generating panorama.`,
       stitchFailed: "Stitching failed",
+      stitchTimedOut: "Server timed out — AI stitching can exceed 1 minute; use a host plan with a longer function limit.",
       failedHotspot: "Failed to create hotspot",
       hotspotAdded: "Hotspot added.",
       failedPublish: "Failed to publish tour",

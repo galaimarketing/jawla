@@ -160,8 +160,18 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
         method: "POST",
       });
 
-      const data = (await response.json()) as { message?: string };
-      if (!response.ok) throw new Error(data.message || m.stitchFailed);
+      let data: { message?: string } = {};
+      try {
+        data = (await response.json()) as { message?: string };
+      } catch {
+        /* non-JSON body (e.g. 504 HTML) */
+      }
+      if (!response.ok) {
+        const timedOut = response.status === 504 || response.status === 408;
+        throw new Error(
+          (data.message || m.stitchFailed) + (timedOut ? ` ${m.stitchTimedOut}` : ""),
+        );
+      }
 
       setMessage(data.message || m.panoramaGenerated);
       await refreshTourData();
@@ -319,14 +329,23 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
             <label className="mb-2 mt-4 block text-sm text-slate-300">
               {remainingRequired > 0 ? m.nextPhoto(uploadedCount + 1, MIN_STITCH_PHOTOS) : m.optionalExtra}
             </label>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              multiple={false}
-              onChange={(e) => void handleUpload(e.target.files)}
-              className="w-full text-sm"
-            />
+            <label className="inline-flex cursor-pointer items-center justify-center rounded-full border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple={false}
+                className="sr-only"
+                onChange={(e) => {
+                  void handleUpload(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              {m.openCamera}
+            </label>
+            {canGeneratePanorama && !stitching ? (
+              <p className="mt-2 text-xs text-slate-400">{m.stitchWaitHint}</p>
+            ) : null}
             <button
               onClick={generatePanorama}
               disabled={!canGeneratePanorama}
@@ -334,6 +353,7 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
             >
               {stitching ? m.generating : remainingRequired > 0 ? m.needMore(remainingRequired) : m.generatePanorama}
             </button>
+            {stitching ? <p className="mt-2 text-xs text-slate-400">{m.stitchWaitHint}</p> : null}
           </div>
         </div>
 

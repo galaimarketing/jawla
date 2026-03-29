@@ -10,6 +10,9 @@ interface Params {
 /** Minimum photos; AI can fuse a small set. Four+ still recommended for quality. */
 const MIN_STITCH_PHOTOS = 2;
 
+/** Gemini / optional Nanobanana polling need more than the default 10s on many hosts. */
+export const maxDuration = 120;
+
 export async function POST(_request: Request, { params }: Params) {
   const { roomId } = await params;
   const supabase = await createClient();
