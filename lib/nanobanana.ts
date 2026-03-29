@@ -56,9 +56,12 @@ class NanobananaHttpClient implements NanobananaClient {
       },
       body: JSON.stringify({
         prompt:
-          "Create a seamless equirectangular 360-degree panorama from these interior photos. " +
-          "Output a single 2:1 wide image suitable for a 360 viewer (full horizontal wrap, natural sky/floor). " +
-          "Blend overlaps; keep lighting consistent and photorealistic.",
+          "Multiple photos show the same interior room from different angles. " +
+          "Generate ONE photorealistic equirectangular 360° panorama texture. " +
+          "Output must be exactly 2:1 aspect (width = 2× height) for a spherical viewer — not 16:9. " +
+          "Left and right image edges must tile seamlessly (360° wrap). " +
+          "Blend all inputs; straight walls/lines stay straight in the mid band (no fisheye barrel look); no stretch/squash. " +
+          "Consistent lighting; no text or logos.",
         mode: "edit",
         aspectRatio: "2:1",
         imageQuality: "2K",

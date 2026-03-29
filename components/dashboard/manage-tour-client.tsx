@@ -222,7 +222,7 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
   const canRenderViewer = !!selectedRoom?.panorama_url;
 
   return (
-    <div className="space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
+    <div className="min-w-0 space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
       <div className="grid gap-4 rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm md:grid-cols-3">
         <div>
           <label className="mb-2 block text-sm text-slate-300">{m.rooms}</label>
@@ -255,13 +255,18 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <div className="space-y-4">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[1.5fr_1fr] lg:items-start">
+        <div className="min-w-0 space-y-4">
           {canRenderViewer ? (
             <Viewer360
               panoramaUrl={selectedRoom.panorama_url as string}
               hotspots={selectedRoom.hotspots}
               interactive
+              hotspotHud={{
+                centerYaw: m.viewerCenterYaw,
+                centerPitch: m.viewerCenterPitch,
+                useCenter: m.viewerUseCenter,
+              }}
               onCapturePoint={setPoint}
               onHotspotClick={() => {
                 // no-op for manage mode
@@ -357,7 +362,7 @@ export default function ManageTourClient({ tour, rooms: initialRooms }: ManageTo
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className="rounded-2xl border border-white/10 bg-[#0b1228]/70 p-4 backdrop-blur-sm">
             <h3 className="mb-2 text-sm font-medium">{m.hotspotTitle}</h3>
             <p className="text-xs text-slate-400">{m.hotspotWalkHint}</p>

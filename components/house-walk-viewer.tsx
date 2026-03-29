@@ -95,7 +95,7 @@ const HouseWalkViewer = forwardRef<
       for (const room of sorted) {
         const source = Marzipano.ImageUrlSource.fromString(room.panorama_url);
         const geometry = new Marzipano.EquirectGeometry([{ width: 4096 }]);
-        const view = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: Math.PI / 2.25 }, limiter);
+        const view = new Marzipano.RectilinearView({ yaw: 0, pitch: 0, fov: Math.PI / 2.5 }, limiter);
         const scene = viewer.createScene({
           source,
           geometry,

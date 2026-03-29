@@ -12,6 +12,12 @@ interface Viewer360Props {
   interactive?: boolean;
   onHotspotClick?: (hotspot: Hotspot) => void;
   onCapturePoint?: (point: { yaw: number; pitch: number }) => void;
+  /** Localized strings for the hotspot helper overlay (manage mode). */
+  hotspotHud?: {
+    centerYaw: string;
+    centerPitch: string;
+    useCenter: string;
+  };
 }
 
 export default function Viewer360({
@@ -21,6 +27,7 @@ export default function Viewer360({
   interactive = false,
   onHotspotClick,
   onCapturePoint,
+  hotspotHud,
 }: Viewer360Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewerRef = useRef<unknown>(null);
@@ -51,7 +58,7 @@ export default function Viewer360({
       const source = Marzipano.ImageUrlSource.fromString(panoramaUrl);
       const geometry = new Marzipano.EquirectGeometry([{ width: 4096 }]);
       const view = new Marzipano.RectilinearView(
-        { yaw: 0, pitch: 0, fov: Math.PI / 2.25 },
+        { yaw: 0, pitch: 0, fov: Math.PI / 2.5 },
         createJawlaViewLimiter(Marzipano),
       );
 
@@ -88,18 +95,37 @@ export default function Viewer360({
     };
   }, [panoramaUrl, onHotspotClick, safeHotspots]);
 
+  const hud = hotspotHud ?? {
+    centerYaw: "Center yaw",
+    centerPitch: "Center pitch",
+    useCenter: "Use center for hotspot",
+  };
+
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl border border-white/10 bg-[#020817]/80 backdrop-blur-sm", className)}>
-      <div ref={containerRef} className="aspect-[2/1] min-h-[240px] w-full max-h-[min(70vh,720px)] sm:min-h-[320px]" />
+    <div
+      className={cn(
+        "relative min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#020817]/80 backdrop-blur-sm",
+        className,
+      )}
+    >
+      <div
+        ref={containerRef}
+        className="h-[clamp(13rem,min(58vmin,72vh),36rem)] w-full min-h-[13rem] min-w-0"
+      />
       {interactive ? (
-        <div className="absolute bottom-3 left-3 rounded-xl border border-white/20 bg-[#0b1228]/80 px-3 py-2 text-xs text-white backdrop-blur-sm">
-          <p>Center point yaw: {currentPoint.yaw.toFixed(3)}</p>
-          <p>Center point pitch: {currentPoint.pitch.toFixed(3)}</p>
+        <div className="absolute bottom-2 start-2 z-10 max-w-[calc(100%-1rem)] rounded-xl border border-white/20 bg-[#0b1228]/90 px-2 py-1.5 text-[10px] leading-snug text-white shadow-lg backdrop-blur-sm sm:bottom-3 sm:start-3 sm:max-w-[min(100%-1.5rem,17rem)] sm:px-3 sm:py-2 sm:text-xs">
+          <p className="break-all">
+            {hud.centerYaw}: {currentPoint.yaw.toFixed(3)}
+          </p>
+          <p className="break-all">
+            {hud.centerPitch}: {currentPoint.pitch.toFixed(3)}
+          </p>
           <button
-            className="mt-2 rounded-full bg-white px-3 py-1 text-black"
+            type="button"
+            className="mt-1.5 w-full rounded-full bg-white px-2 py-1 text-[10px] font-medium text-black sm:mt-2 sm:py-1.5 sm:text-xs"
             onClick={() => onCapturePoint?.(currentPoint)}
           >
-            Use center point for hotspot
+            {hud.useCenter}
           </button>
         </div>
       ) : null}

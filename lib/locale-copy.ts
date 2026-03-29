@@ -189,6 +189,9 @@ export function manageTour(locale: Locale) {
       generating: "جاري الإنشاء...",
       needMore: (n: number) => (n === 1 ? "يلزم صورة واحدة أخرى" : `يلزم ${n} صور أخرى`),
       generatePanorama: "إنشاء بانوراما",
+      viewerCenterYaw: "انحراف المركز",
+      viewerCenterPitch: "ميل المركز",
+      viewerUseCenter: "استخدم مركز العرض لنقطة الانتقال",
       hotspotTitle: "إنشاء نقطة انتقال",
       hotspotWalkHint:
         "ضع النقاط عند الممرات أو الأبواب — الزوار ينتقلون بين الغرف في نفس النافذة (مثل Street View).",
@@ -242,6 +245,9 @@ export function manageTour(locale: Locale) {
       generating: "Generating...",
       needMore: (n: number) => `Need ${n} more photo${n > 1 ? "s" : ""}`,
       generatePanorama: "Generate panorama",
+      viewerCenterYaw: "Center yaw",
+      viewerCenterPitch: "Center pitch",
+      viewerUseCenter: "Use center for hotspot",
       hotspotTitle: "Create hotspot",
       hotspotWalkHint:
         "Place hotspots at doorways or hallways — visitors walk between rooms in one viewer (Street View–style).",
